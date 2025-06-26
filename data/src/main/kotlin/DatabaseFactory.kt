@@ -12,10 +12,16 @@ import data.Sets
 
 object DatabaseFactory {
     fun init(databaseUrl: String) {
-        // Render URL is postgresql://, JDBC needs jdbc:postgresql://
-        val jdbcUrl = "jdbc:" + databaseUrl
+        // Преобразуем Render-URL в JDBC-URL
+        // postgresql://user:password@host:port/db
+        val regex = Regex("""postgres(?:ql)?://([^:]+):([^@]+)@([^:/]+)(?::(\d+))?/([^?]+)""")
+        val match = regex.matchEntire(databaseUrl)
+            ?: error("Invalid DATABASE_URL format: $databaseUrl")
+        val (user, password, host, port, db) = match.destructured
+        val portPart = if (port.isNotEmpty()) ":$port" else ""
+        val jdbcUrl = "jdbc:postgresql://$host$portPart/$db?user=$user&password=$password&sslmode=require"
+
         Database.connect(url = jdbcUrl, driver = "org.postgresql.Driver")
-        
         transaction {
             SchemaUtils.create(Users, Exercises, Workouts, Sets)
         }
