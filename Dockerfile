@@ -12,5 +12,5 @@ COPY --from=build /app/bot/build/install/bot/ ./
 RUN chmod +x /app/bin/bot
 EXPOSE 8080
 ENV PORT=8080
-# Запускаем напрямую через java, так как скрипт может работать некорректно
-CMD ["java", "-classpath", "lib/*", "io.ktor.server.netty.EngineMain"]
+# Запускаем напрямую наш собственный main class, а не EngineMain от Ktor
+CMD ["java", "-classpath", "lib/*", "bot.BotApplicationKt"]
