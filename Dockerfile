@@ -12,5 +12,5 @@ COPY --from=build /app/bot/build/install/bot/ ./
 RUN chmod +x /app/bin/bot
 EXPOSE 8080
 ENV PORT=8080
-# Сначала выводим структуру файлов для дебага, потом запускаем
-CMD ["/bin/sh", "-c", "echo 'Listing /app:'; ls -l /app; echo 'Listing /app/bin:'; ls -l /app/bin; echo 'Listing /app/lib:'; ls -l /app/lib; echo 'Starting bot...'; /app/bin/bot"]
+# Запускаем напрямую через java, так как скрипт может работать некорректно
+CMD ["java", "-classpath", "lib/*", "io.ktor.server.netty.EngineMain"]

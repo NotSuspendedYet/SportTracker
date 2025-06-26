@@ -167,7 +167,7 @@ fun main() {
 }
 
 sealed class DialogState {
-    object AddExercise : DialogState()
+    data object AddExercise : DialogState()
     data class RecordWorkout_SelectExercise(val exerciseId: Int) : DialogState()
     data class RecordWorkout_EnterSets(val exerciseId: Int) : DialogState()
 } 
