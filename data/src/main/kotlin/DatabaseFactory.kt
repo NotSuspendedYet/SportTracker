@@ -11,13 +11,11 @@ import data.Workouts
 import data.Sets
 
 object DatabaseFactory {
-    fun init(databaseUrl: String, user: String, password: String) {
-        Database.connect(
-            url = databaseUrl,
-            driver = "org.postgresql.Driver",
-            user = user,
-            password = password
-        )
+    fun init(databaseUrl: String) {
+        // Render URL is postgresql://, JDBC needs jdbc:postgresql://
+        val jdbcUrl = "jdbc:" + databaseUrl
+        Database.connect(url = jdbcUrl, driver = "org.postgresql.Driver")
+        
         transaction {
             SchemaUtils.create(Users, Exercises, Workouts, Sets)
         }

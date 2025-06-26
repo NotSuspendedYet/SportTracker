@@ -30,10 +30,8 @@ import java.util.concurrent.ConcurrentHashMap
 fun main() {
     val botToken = System.getenv("BOT_TOKEN") ?: error("BOT_TOKEN not set")
     val dbUrl = System.getenv("DATABASE_URL") ?: error("DATABASE_URL not set")
-    val dbUser = System.getenv("DATABASE_USER") ?: error("DATABASE_USER not set")
-    val dbPass = System.getenv("DATABASE_PASSWORD") ?: error("DATABASE_PASSWORD not set")
 
-    DatabaseFactory.init(dbUrl, dbUser, dbPass)
+    DatabaseFactory.init(dbUrl)
     val userRepo = UserRepositoryImpl()
     val exerciseRepo = ExerciseRepositoryImpl()
     val workoutRepo = WorkoutRepositoryImpl()
