@@ -10,4 +10,4 @@ WORKDIR /app
 COPY --from=build /app/bot/build/install/bot/ ./
 EXPOSE 8080
 ENV PORT=8080
-CMD ["app/bin/bot"]
+CMD ["./bin/bot"]
