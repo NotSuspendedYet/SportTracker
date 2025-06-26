@@ -6,6 +6,9 @@ import com.github.kotlintelegrambot.dispatcher.callbackQuery
 import com.github.kotlintelegrambot.dispatcher.command
 import com.github.kotlintelegrambot.dispatcher.text
 import com.github.kotlintelegrambot.entities.ChatId.Companion.fromId
+import com.github.kotlintelegrambot.entities.ReplyMarkup
+import com.github.kotlintelegrambot.entities.keyboard.KeyboardButton
+import com.github.kotlintelegrambot.entities.keyboard.ReplyKeyboardMarkup
 import com.github.kotlintelegrambot.logging.LogLevel
 import data.DatabaseFactory
 import data.ExerciseRepositoryImpl
@@ -27,6 +30,19 @@ import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.ConcurrentHashMap
 
+private val mainMenu = ReplyKeyboardMarkup(
+    keyboard = listOf(
+        listOf(
+            KeyboardButton(text = "➕ Добавить упражнение"),
+            KeyboardButton(text = "🏋️ Записать тренировку")
+        ),
+        listOf(
+            KeyboardButton(text = "📊 Отчёт")
+        )
+    ),
+    resizeKeyboard = true
+)
+
 fun main() {
     val botToken = System.getenv("BOT_TOKEN") ?: error("BOT_TOKEN not set")
     val dbUrl = System.getenv("DATABASE_URL") ?: error("DATABASE_URL not set")
@@ -47,33 +63,83 @@ fun main() {
                 command("start") {
                     bot.sendMessage(
                         chatId = fromId(message.chat.id),
-                        text = "Привет! Я помогу отслеживать твои тренировки. Используй меню или команды."
+                        text = "Привет! Я помогу отслеживать твои тренировки. Выбери действие из меню.",
+                        replyMarkup = mainMenu
                     )
                 }
                 text {
                     val userId = message.from?.id ?: return@text
                     val state = dialogState[userId]
-                    when (state) {
-                        is DialogState.AddExercise -> {
+                    when {
+                        text == "➕ Добавить упражнение" -> {
+                            dialogState[userId] = DialogState.AddExercise
+                            bot.sendMessage(
+                                chatId = fromId(message.chat.id),
+                                text = "Введи название упражнения:",
+                                replyMarkup = mainMenu
+                            )
+                        }
+                        text == "🏋️ Записать тренировку" -> {
+                            val user = userRepo.getOrCreateByTelegramId(userId)
+                            val exercises = exerciseRepo.getExercisesByUser(user.id)
+                            if (exercises.isEmpty()) {
+                                bot.sendMessage(
+                                    chatId = fromId(message.chat.id),
+                                    text = "Сначала добавь упражнение через меню",
+                                    replyMarkup = mainMenu
+                                )
+                            } else {
+                                val list = exercises.mapIndexed { i, ex -> "${i + 1}. ${ex.name}" }.joinToString("\n")
+                                bot.sendMessage(
+                                    chatId = fromId(message.chat.id),
+                                    text = "Выбери упражнение:\n$list",
+                                    replyMarkup = mainMenu
+                                )
+                                dialogState[userId] = DialogState.RecordWorkout_SelectExercise(exercises.first().id) // TODO: выбор по номеру
+                            }
+                        }
+                        text == "📊 Отчёт" -> {
+                            val user = userRepo.getOrCreateByTelegramId(userId)
+                            val workouts = workoutRepo.getWorkoutsByUser(user.id, null, null)
+                            if (workouts.isEmpty()) {
+                                bot.sendMessage(
+                                    chatId = fromId(message.chat.id),
+                                    text = "Нет записей о тренировках.",
+                                    replyMarkup = mainMenu
+                                )
+                            } else {
+                                val report = workouts.joinToString("\n\n") { w ->
+                                    val date = w.workout.date.truncatedTo(ChronoUnit.MINUTES)
+                                    val sets = w.sets.joinToString("; ") { s -> "${s.reps}x${s.setIndex}${s.weight?.let { "@${it}" } ?: ""}" }
+                                    "$date: $sets"
+                                }
+                                bot.sendMessage(
+                                    chatId = fromId(message.chat.id),
+                                    text = report,
+                                    replyMarkup = mainMenu
+                                )
+                            }
+                        }
+                        state is DialogState.AddExercise -> {
                             val user = userRepo.getOrCreateByTelegramId(userId)
                             exerciseRepo.addExercise(user.id, text)
                             bot.sendMessage(
                                 chatId = fromId(message.chat.id),
-                                text = "Упражнение '$text' добавлено!"
+                                text = "Упражнение '$text' добавлено!",
+                                replyMarkup = mainMenu
                             )
                             dialogState.remove(userId)
                         }
-
-                        is DialogState.RecordWorkout_SelectExercise -> {
+                        state is DialogState.RecordWorkout_SelectExercise -> {
                             val exerciseId = state.exerciseId
                             dialogState[userId] = DialogState.RecordWorkout_EnterSets(exerciseId)
                             bot.sendMessage(
                                 chatId = fromId(message.chat.id),
-                                text = "Введи подходы (например: 12x3@50, 15x2)"
+                                text = "Введи подходы (например: 12x3@50, 15x2)",
+                                replyMarkup = mainMenu
                             )
                         }
-
-                        is DialogState.RecordWorkout_EnterSets -> {
+                        state is DialogState.RecordWorkout_EnterSets -> {
                             val user = userRepo.getOrCreateByTelegramId(userId)
                             val exerciseId = state.exerciseId
                             val setsParsed = WorkoutParser.parseSets(text)
@@ -87,27 +153,26 @@ fun main() {
                             }
                             bot.sendMessage(
                                 chatId = fromId(message.chat.id),
-                                text = "Тренировка записана!"
+                                text = "Тренировка записана!",
+                                replyMarkup = mainMenu
                             )
                             dialogState.remove(userId)
                         }
-
                         else -> {
-                            bot.sendMessage(
-                                chatId = fromId(message.chat.id),
-                                text = "Неизвестная команда. Используй меню."
-                            )
+                            // Не отвечаем на произвольный текст, если не в диалоге и не кнопка
                         }
                     }
                 }
                 callbackQuery {
                     // Для inline-кнопок, если потребуется
                 }
+                // Оставляем команды для совместимости с ручным вводом
                 command("add_exercise") {
                     dialogState[message.from!!.id] = DialogState.AddExercise
                     bot.sendMessage(
                         chatId = fromId(message.chat.id),
-                        text = "Введи название упражнения:"
+                        text = "Введи название упражнения:",
+                        replyMarkup = mainMenu
                     )
                 }
                 command("record_workout") {
@@ -116,18 +181,17 @@ fun main() {
                     if (exercises.isEmpty()) {
                         bot.sendMessage(
                             chatId = fromId(message.chat.id),
-                            text = "Сначала добавь упражнение через /add_exercise"
+                            text = "Сначала добавь упражнение через меню",
+                            replyMarkup = mainMenu
                         )
                     } else {
-                        val list =
-                            exercises.mapIndexed { i, ex -> "${i + 1}. ${ex.name}" }
-                                .joinToString("\n")
+                        val list = exercises.mapIndexed { i, ex -> "${i + 1}. ${ex.name}" }.joinToString("\n")
                         bot.sendMessage(
                             chatId = fromId(message.chat.id),
-                            text = "Выбери упражнение:\n$list"
+                            text = "Выбери упражнение:\n$list",
+                            replyMarkup = mainMenu
                         )
-                        dialogState[message.from!!.id] =
-                            DialogState.RecordWorkout_SelectExercise(exercises.first().id) // TODO: выбор по номеру
+                        dialogState[message.from!!.id] = DialogState.RecordWorkout_SelectExercise(exercises.first().id) // TODO: выбор по номеру
                     }
                 }
                 command("report") {
@@ -136,16 +200,20 @@ fun main() {
                     if (workouts.isEmpty()) {
                         bot.sendMessage(
                             chatId = fromId(message.chat.id),
-                            text = "Нет записей о тренировках."
+                            text = "Нет записей о тренировках.",
+                            replyMarkup = mainMenu
                         )
                     } else {
                         val report = workouts.joinToString("\n\n") { w ->
                             val date = w.workout.date.truncatedTo(ChronoUnit.MINUTES)
-                            val sets =
-                                w.sets.joinToString("; ") { s -> "${s.reps}x${s.setIndex}${s.weight?.let { "@${it}" } ?: ""}" }
+                            val sets = w.sets.joinToString("; ") { s -> "${s.reps}x${s.setIndex}${s.weight?.let { "@${it}" } ?: ""}" }
                             "$date: $sets"
                         }
-                        bot.sendMessage(chatId = fromId(message.chat.id), text = report)
+                        bot.sendMessage(
+                            chatId = fromId(message.chat.id),
+                            text = report,
+                            replyMarkup = mainMenu
+                        )
                     }
                 }
             }

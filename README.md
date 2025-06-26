@@ -14,20 +14,19 @@
 - **Dashboard → New → Web Service**
 - Source: ваш GitHub-репозиторий с этим проектом
 - Build Command: `./gradlew :bot:installDist`
-- Start Command: `./bot/build/install/bot/bin/bot`
+- Start Command: не нужен (используется Dockerfile)
 - Environment → Add Environment Variables:
   - `BOT_TOKEN` — токен Telegram-бота
-  - `DATABASE_URL` — например, `jdbc:postgresql://<host>:5432/<db>`
-  - `DATABASE_USER` — пользователь БД
-  - `DATABASE_PASSWORD` — пароль БД
+  - `DATABASE_URL` — строка подключения к БД (internal или external, формат: `postgresql://user:password@host:port/db`)
   - `PORT` — `8080` (Render автоматически пробрасывает порт)
 - Region: Europe или ближайший к вам
-- Dockerfile не нужен — Render сам соберёт по gradle
+- Dockerfile используется для сборки и запуска
 
 ### 3. Настройте Telegram Webhook (опционально)
 - Render выдаст вам публичный URL (например, `https://sporttracker.onrender.com`)
 - Можно использовать polling (по умолчанию), либо настроить webhook через BotFather:
-  - `/setwebhook` → URL: `https://sporttracker.onrender.com` (если реализуете webhook)
+  - Для polling: удалите webhook (см. FAQ ниже)
+  - Для webhook: реализуйте endpoint и пропишите его через `/setwebhook`
 
 ---
 
@@ -95,18 +94,53 @@ SportTracker/
 
 ```sh
 docker build -t sporttracker .
-docker run -e BOT_TOKEN=... -e DATABASE_URL=... -e DATABASE_USER=... -e DATABASE_PASSWORD=... -p 8080:8080 sporttracker
+docker run -e BOT_TOKEN=... -e DATABASE_URL=... -p 8080:8080 sporttracker
 ```
 
 ## Переменные окружения
 - `BOT_TOKEN` — токен Telegram-бота
-- `DATABASE_URL` — JDBC-URL PostgreSQL (например, jdbc:postgresql://host:5432/db)
-- `DATABASE_USER` — пользователь БД
-- `DATABASE_PASSWORD` — пароль БД
+- `DATABASE_URL` — строка подключения к PostgreSQL (например, postgresql://user:password@host:port/db)
 - `PORT` — порт (по умолчанию 8080)
 
 ## Миграции
 Таблицы создаются автоматически при запуске.
+
+---
+
+## FAQ и типовые ошибки при деплое на Render
+
+### 1. Ошибка: `Can't resolve dialect for connection: postgresql://...`
+**Причина:** Render выдаёт DATABASE_URL в формате, который не понимает JDBC/Exposed.
+**Решение:** В проекте реализован автоматический парсер DATABASE_URL, который преобразует его в нужный формат. Просто указывайте переменную как есть (internal или external URL Render).
+
+### 2. Ошибка: `Unable to parse URL jdbc:postgresql://user:password@host:port/db`
+**Причина:** JDBC требует user и password как параметры, а не в user:password@.
+**Решение:** В проекте реализован парсер, который преобразует URL в формат `jdbc:postgresql://host:port/db?user=...&password=...`.
+
+### 3. Ошибка: `Usage: java [options] <mainclass> [args...]`
+**Причина:** Скрипт запуска Gradle (`/app/bin/bot`) не всегда работает в Docker/Render.
+**Решение:** В Dockerfile запуск производится напрямую через `java -classpath "lib/*" bot.BotApplicationKt`.
+
+### 4. Ошибка: `Module function cannot be found for the fully qualified name ...`
+**Причина:** Попытка запускать стандартный Ktor EngineMain вместо своей точки входа.
+**Решение:** В Dockerfile явно указывается запуск вашего main-класса: `bot.BotApplicationKt`.
+
+### 5. Ошибка: `409 Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first`
+**Причина:** У бота в Telegram уже настроен webhook, а backend пытается работать в режиме polling.
+**Решение:**
+- Откройте в браузере:  
+  `https://api.telegram.org/bot<YOUR_BOT_TOKEN>/deleteWebhook`
+- После этого polling будет работать корректно.
+
+### 6. Ошибка: Exited with status 128
+**Причина:** Обычно это отсутствие переменных окружения или проблема с правами на скрипт.
+**Решение:**
+- Проверьте, что заданы все переменные окружения (`BOT_TOKEN`, `DATABASE_URL`, `PORT`).
+- В Dockerfile добавлен `chmod +x /app/bin/bot`, но запуск всё равно производится через java.
+
+### 7. Как посмотреть структуру файлов в контейнере?
+**Решение:**
+- В Dockerfile можно временно добавить команды `ls -l /app`, `ls -l /app/bin`, `ls -l /app/lib` перед запуском, чтобы увидеть структуру в логах Render.
 
 ---
 
