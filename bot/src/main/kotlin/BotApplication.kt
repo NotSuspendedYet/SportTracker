@@ -1,24 +1,27 @@
 package bot
 
-import io.ktor.server.engine.embeddedServer
-import io.ktor.server.netty.Netty
-import io.ktor.server.application.*
-import io.ktor.server.routing.*
-import io.ktor.server.response.*
-import io.ktor.server.request.*
-import io.ktor.server.plugins.contentnegotiation.*
-import io.ktor.serialization.kotlinx.json.*
-import kotlinx.coroutines.*
 import com.github.kotlintelegrambot.Bot
-import com.github.kotlintelegrambot.entities.Update
-import com.github.kotlintelegrambot.entities.Message
-import com.github.kotlintelegrambot.logging.LogLevel
 import com.github.kotlintelegrambot.dispatch
 import com.github.kotlintelegrambot.dispatcher.*
 import com.github.kotlintelegrambot.dispatcher.handlers.*
 import com.github.kotlintelegrambot.entities.ChatId.Companion.fromId
+import com.github.kotlintelegrambot.logging.LogLevel
 import data.*
 import domain.*
+import io.ktor.application.call
+import io.ktor.response.respondText
+import io.ktor.routing.get
+import io.ktor.routing.routing
+import io.ktor.serialization.kotlinx.json.*
+import io.ktor.server.engine.embeddedServer
+import io.ktor.server.netty.Netty
+import io.ktor.server.plugins.contentnegotiation.*
+import io.ktor.server.request.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
+import io.ktor.server.netty.*
+import io.ktor.server.plugins.contentnegotiation.*
+import kotlinx.coroutines.*
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.ConcurrentHashMap
@@ -147,12 +150,10 @@ fun main() {
                     }
                 }
             }
-
         }
         .build()
 
-    embeddedServer(Netty, port = System.getenv("PORT")?.toInt() ?: 8080) {
-        install(ContentNegotiation) { json() }
+    embeddedServer(Netty, System.getenv("PORT")?.toInt() ?: 8080) {
         routing {
             get("/") { call.respondText("SportTracker Bot is running!") }
         }
