@@ -24,4 +24,20 @@ object Sets : IntIdTable("sets") {
     val reps = integer("reps")
     val weight = integer("weight").nullable()
     val setIndex = integer("set_index")
+}
+
+object SwimmingWorkouts : IntIdTable("swimming_workouts") {
+    val user = reference("user_id", Users)
+    val distance = integer("distance")
+    val totalTime = integer("total_time")
+    val paddlesDistance = integer("paddles_distance").nullable()
+    val best50mTime = integer("best_50m_time").nullable()
+    val date = datetime("date")
+}
+
+object PullUpWorkouts : IntIdTable("pullup_workouts") {
+    val user = reference("user_id", Users)
+    val totalPullUps = integer("total_pullups")
+    val maxPullUpsInSet = integer("max_pullups_in_set")
+    val date = datetime("date")
 } 

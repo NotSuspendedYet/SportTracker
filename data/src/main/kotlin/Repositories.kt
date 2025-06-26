@@ -5,6 +5,8 @@ import domain.Exercise
 import domain.Workout
 import domain.WorkoutSet
 import domain.WorkoutWithSets
+import domain.SwimmingWorkout
+import domain.PullUpWorkout
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.LocalDateTime
@@ -23,6 +25,16 @@ interface ExerciseRepository {
 interface WorkoutRepository {
     suspend fun addWorkout(userId: Int, date: LocalDateTime): Workout
     suspend fun getWorkoutsByUser(userId: Int, from: LocalDateTime?, to: LocalDateTime?): List<WorkoutWithSets>
+}
+
+interface SwimmingWorkoutRepository {
+    suspend fun addSwimmingWorkout(userId: Int, distance: Int, totalTime: Int, paddlesDistance: Int?, best50mTime: Int?, date: LocalDateTime): SwimmingWorkout
+    suspend fun getAllByUser(userId: Int): List<SwimmingWorkout>
+}
+
+interface PullUpWorkoutRepository {
+    suspend fun addPullUpWorkout(userId: Int, totalPullUps: Int, maxPullUpsInSet: Int, date: LocalDateTime): PullUpWorkout
+    suspend fun getAllByUser(userId: Int): List<PullUpWorkout>
 }
 
 class UserRepositoryImpl : UserRepository {
@@ -96,5 +108,57 @@ class WorkoutRepositoryImpl : WorkoutRepository {
                 }
                 WorkoutWithSets(workout, sets)
             }
+    }
+}
+
+class SwimmingWorkoutRepositoryImpl : SwimmingWorkoutRepository {
+    override suspend fun addSwimmingWorkout(userId: Int, distance: Int, totalTime: Int, paddlesDistance: Int?, best50mTime: Int?, date: LocalDateTime): SwimmingWorkout = DatabaseFactory.dbQuery {
+        val id = SwimmingWorkouts.insertAndGetId {
+            it[SwimmingWorkouts.user] = userId
+            it[SwimmingWorkouts.distance] = distance
+            it[SwimmingWorkouts.totalTime] = totalTime
+            it[SwimmingWorkouts.paddlesDistance] = paddlesDistance
+            it[SwimmingWorkouts.best50mTime] = best50mTime
+            it[SwimmingWorkouts.date] = date
+        }.value
+        SwimmingWorkout(id, userId, distance, totalTime, paddlesDistance, best50mTime, date)
+    }
+
+    override suspend fun getAllByUser(userId: Int): List<SwimmingWorkout> = DatabaseFactory.dbQuery {
+        SwimmingWorkouts.select { SwimmingWorkouts.user eq userId }.map {
+            SwimmingWorkout(
+                it[SwimmingWorkouts.id].value,
+                it[SwimmingWorkouts.user].value,
+                it[SwimmingWorkouts.distance],
+                it[SwimmingWorkouts.totalTime],
+                it[SwimmingWorkouts.paddlesDistance],
+                it[SwimmingWorkouts.best50mTime],
+                it[SwimmingWorkouts.date]
+            )
+        }
+    }
+}
+
+class PullUpWorkoutRepositoryImpl : PullUpWorkoutRepository {
+    override suspend fun addPullUpWorkout(userId: Int, totalPullUps: Int, maxPullUpsInSet: Int, date: LocalDateTime): PullUpWorkout = DatabaseFactory.dbQuery {
+        val id = PullUpWorkouts.insertAndGetId {
+            it[PullUpWorkouts.user] = userId
+            it[PullUpWorkouts.totalPullUps] = totalPullUps
+            it[PullUpWorkouts.maxPullUpsInSet] = maxPullUpsInSet
+            it[PullUpWorkouts.date] = date
+        }.value
+        PullUpWorkout(id, userId, totalPullUps, maxPullUpsInSet, date)
+    }
+
+    override suspend fun getAllByUser(userId: Int): List<PullUpWorkout> = DatabaseFactory.dbQuery {
+        PullUpWorkouts.select { PullUpWorkouts.user eq userId }.map {
+            PullUpWorkout(
+                it[PullUpWorkouts.id].value,
+                it[PullUpWorkouts.user].value,
+                it[PullUpWorkouts.totalPullUps],
+                it[PullUpWorkouts.maxPullUpsInSet],
+                it[PullUpWorkouts.date]
+            )
+        }
     }
 } 
