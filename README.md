@@ -142,6 +142,20 @@ docker run -e BOT_TOKEN=... -e DATABASE_URL=... -p 8080:8080 sporttracker
 **Решение:**
 - В Dockerfile можно временно добавить команды `ls -l /app`, `ls -l /app/bin`, `ls -l /app/lib` перед запуском, чтобы увидеть структуру в логах Render.
 
+### 8. Ошибка: No such class ReplyKeyboardMarkup (или кнопки не отображаются)
+**Причина:** В библиотеке kotlin-telegram-bot для создания меню с кнопками нужно использовать класс `KeyboardReplyMarkup`, а не `ReplyKeyboardMarkup` (как в Bot API).
+**Решение:** Используйте `KeyboardReplyMarkup` для создания ReplyKeyboard:
+```kotlin
+val mainMenu = KeyboardReplyMarkup(
+    keyboard = listOf(
+        listOf(KeyboardButton(text = "➕ Добавить упражнение")),
+        listOf(KeyboardButton(text = "🏋️ Записать тренировку")),
+        listOf(KeyboardButton(text = "📊 Отчёт"))
+    ),
+    resizeKeyboard = true
+)
+```
+
 ---
 
 ## TODO

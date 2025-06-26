@@ -6,9 +6,8 @@ import com.github.kotlintelegrambot.dispatcher.callbackQuery
 import com.github.kotlintelegrambot.dispatcher.command
 import com.github.kotlintelegrambot.dispatcher.text
 import com.github.kotlintelegrambot.entities.ChatId.Companion.fromId
-import com.github.kotlintelegrambot.entities.ReplyMarkup
+import com.github.kotlintelegrambot.entities.KeyboardReplyMarkup
 import com.github.kotlintelegrambot.entities.keyboard.KeyboardButton
-import com.github.kotlintelegrambot.entities.keyboard.ReplyKeyboardMarkup
 import com.github.kotlintelegrambot.logging.LogLevel
 import data.DatabaseFactory
 import data.ExerciseRepositoryImpl
@@ -30,7 +29,7 @@ import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.ConcurrentHashMap
 
-private val mainMenu = ReplyKeyboardMarkup(
+private val mainMenu = KeyboardReplyMarkup(
     keyboard = listOf(
         listOf(
             KeyboardButton(text = "➕ Добавить упражнение"),
