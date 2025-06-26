@@ -77,23 +77,24 @@ class WorkoutRepositoryImpl : WorkoutRepository {
     }
 
     override suspend fun getWorkoutsByUser(userId: Int, from: LocalDateTime?, to: LocalDateTime?): List<WorkoutWithSets> = DatabaseFactory.dbQuery {
-        val query = Workouts.select { Workouts.user eq userId }
-        val filtered = query.filter {
-            (from == null || it[Workouts.date] >= from) && (to == null || it[Workouts.date] <= to)
-        }
-        filtered.map { workoutRow ->
-            val workout = Workout(workoutRow[Workouts.id].value, workoutRow[Workouts.user].value, workoutRow[Workouts.date])
-            val sets = Sets.select { Sets.workout eq workout.id }.map { setRow ->
-                WorkoutSet(
-                    setRow[Sets.id].value,
-                    setRow[Sets.workout].value,
-                    setRow[Sets.exercise].value,
-                    setRow[Sets.reps],
-                    setRow[Sets.weight],
-                    setRow[Sets.setIndex]
-                )
+        Workouts.select { Workouts.user eq userId }
+            .filter { workoutRow ->
+                (from == null || workoutRow[Workouts.date] >= from) && 
+                (to == null || workoutRow[Workouts.date] <= to)
             }
-            WorkoutWithSets(workout, sets)
-        }
+            .map { workoutRow ->
+                val workout = Workout(workoutRow[Workouts.id].value, workoutRow[Workouts.user].value, workoutRow[Workouts.date])
+                val sets = Sets.select { Sets.workout eq workout.id }.map { setRow ->
+                    WorkoutSet(
+                        setRow[Sets.id].value,
+                        setRow[Sets.workout].value,
+                        setRow[Sets.exercise].value,
+                        setRow[Sets.reps],
+                        setRow[Sets.weight],
+                        setRow[Sets.setIndex]
+                    )
+                }
+                WorkoutWithSets(workout, sets)
+            }
     }
 } 

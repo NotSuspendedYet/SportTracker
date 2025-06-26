@@ -1,6 +1,7 @@
 package data
 
 import domain.WorkoutSet
+import org.jetbrains.exposed.sql.*
 
 interface SetRepository {
     suspend fun addSet(workoutId: Int, exerciseId: Int, reps: Int, weight: Int?, setIndex: Int): WorkoutSet

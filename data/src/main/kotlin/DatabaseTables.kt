@@ -2,6 +2,7 @@ package data
 
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.Table
+import org.jetbrains.exposed.sql.javatime.datetime
 
 object Users : IntIdTable("users") {
     val telegramId = long("telegram_id").uniqueIndex()
