@@ -3,8 +3,10 @@ package data
 import domain.User
 import domain.Exercise
 import domain.Workout
-import domain.Set
+import domain.WorkoutSet
 import domain.WorkoutWithSets
+import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.LocalDateTime
 
 interface UserRepository {
@@ -69,7 +71,7 @@ class WorkoutRepositoryImpl : WorkoutRepository {
     override suspend fun addWorkout(userId: Int, date: LocalDateTime): Workout = DatabaseFactory.dbQuery {
         val id = Workouts.insertAndGetId {
             it[Workouts.user] = userId
-            it[Workouts.date] = org.jetbrains.exposed.sql.javatime.JavaLocalDateTimeColumnType().notNullValueToDB(date) as java.time.LocalDateTime
+            it[Workouts.date] = date
         }.value
         Workout(id, userId, date)
     }
@@ -82,7 +84,7 @@ class WorkoutRepositoryImpl : WorkoutRepository {
         filtered.map { workoutRow ->
             val workout = Workout(workoutRow[Workouts.id].value, workoutRow[Workouts.user].value, workoutRow[Workouts.date])
             val sets = Sets.select { Sets.workout eq workout.id }.map { setRow ->
-                Set(
+                WorkoutSet(
                     setRow[Sets.id].value,
                     setRow[Sets.workout].value,
                     setRow[Sets.exercise].value,

@@ -1,13 +1,13 @@
 package data
 
-import domain.Set
+import domain.WorkoutSet
 
 interface SetRepository {
-    suspend fun addSet(workoutId: Int, exerciseId: Int, reps: Int, weight: Int?, setIndex: Int): Set
+    suspend fun addSet(workoutId: Int, exerciseId: Int, reps: Int, weight: Int?, setIndex: Int): WorkoutSet
 }
 
 class SetRepositoryImpl : SetRepository {
-    override suspend fun addSet(workoutId: Int, exerciseId: Int, reps: Int, weight: Int?, setIndex: Int): Set = DatabaseFactory.dbQuery {
+    override suspend fun addSet(workoutId: Int, exerciseId: Int, reps: Int, weight: Int?, setIndex: Int): WorkoutSet = DatabaseFactory.dbQuery {
         val id = Sets.insertAndGetId {
             it[Sets.workout] = workoutId
             it[Sets.exercise] = exerciseId
@@ -15,6 +15,6 @@ class SetRepositoryImpl : SetRepository {
             it[Sets.weight] = weight
             it[Sets.setIndex] = setIndex
         }.value
-        Set(id, workoutId, exerciseId, reps, weight, setIndex)
+        WorkoutSet(id, workoutId, exerciseId, reps, weight, setIndex)
     }
 } 
