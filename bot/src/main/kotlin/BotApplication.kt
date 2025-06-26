@@ -13,9 +13,12 @@ import data.SetRepositoryImpl
 import data.UserRepositoryImpl
 import data.WorkoutRepositoryImpl
 import domain.WorkoutParser
+import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.call
+import io.ktor.server.application.install
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
+import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
@@ -152,6 +155,7 @@ fun main() {
         .build()
 
     embeddedServer(Netty, System.getenv("PORT")?.toInt() ?: 8080) {
+        install(ContentNegotiation) { json() }
         routing {
             get("/") { call.respondText("SportTracker Bot is running!") }
         }
