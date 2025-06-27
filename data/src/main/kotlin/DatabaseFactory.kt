@@ -11,6 +11,7 @@ import data.Workouts
 import data.Sets
 import data.SwimmingWorkouts
 import data.PullUpWorkouts
+import data.AbsWorkouts
 
 object DatabaseFactory {
     fun init(databaseUrl: String) {
@@ -25,7 +26,7 @@ object DatabaseFactory {
 
         Database.connect(url = jdbcUrl, driver = "org.postgresql.Driver")
         transaction {
-            SchemaUtils.create(Users, Exercises, Workouts, Sets, SwimmingWorkouts, PullUpWorkouts)
+            SchemaUtils.create(Users, Exercises, Workouts, Sets, SwimmingWorkouts, PullUpWorkouts, AbsWorkouts)
         }
     }
 

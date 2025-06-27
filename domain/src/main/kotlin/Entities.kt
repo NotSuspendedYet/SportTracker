@@ -24,4 +24,10 @@ data class PullUpWorkout(
     val totalPullUps: Int,
     val maxPullUpsInSet: Int,
     val date: LocalDateTime
+)
+
+data class AbsWorkout(
+    val id: Int,
+    val userId: Int,
+    val date: java.time.LocalDateTime
 ) 

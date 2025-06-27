@@ -37,6 +37,11 @@ interface PullUpWorkoutRepository {
     suspend fun getAllByUser(userId: Int): List<PullUpWorkout>
 }
 
+interface AbsWorkoutRepository {
+    suspend fun addAbsWorkout(userId: Int, date: java.time.LocalDateTime): domain.AbsWorkout
+    suspend fun getAllByUser(userId: Int): List<domain.AbsWorkout>
+}
+
 class UserRepositoryImpl : UserRepository {
     override suspend fun getOrCreateByTelegramId(telegramId: Long): User = DatabaseFactory.dbQuery {
         val userRow = Users.select { Users.telegramId eq telegramId }.singleOrNull()
@@ -158,6 +163,26 @@ class PullUpWorkoutRepositoryImpl : PullUpWorkoutRepository {
                 it[PullUpWorkouts.totalPullUps],
                 it[PullUpWorkouts.maxPullUpsInSet],
                 it[PullUpWorkouts.date]
+            )
+        }
+    }
+}
+
+class AbsWorkoutRepositoryImpl : AbsWorkoutRepository {
+    override suspend fun addAbsWorkout(userId: Int, date: java.time.LocalDateTime): domain.AbsWorkout = data.DatabaseFactory.dbQuery {
+        val id = data.AbsWorkouts.insertAndGetId {
+            it[data.AbsWorkouts.user] = userId
+            it[data.AbsWorkouts.date] = date
+        }.value
+        domain.AbsWorkout(id, userId, date)
+    }
+
+    override suspend fun getAllByUser(userId: Int): List<domain.AbsWorkout> = data.DatabaseFactory.dbQuery {
+        data.AbsWorkouts.select { data.AbsWorkouts.user eq userId }.map {
+            domain.AbsWorkout(
+                it[data.AbsWorkouts.id].value,
+                it[data.AbsWorkouts.user].value,
+                it[data.AbsWorkouts.date]
             )
         }
     }

@@ -40,4 +40,9 @@ object PullUpWorkouts : IntIdTable("pullup_workouts") {
     val totalPullUps = integer("total_pullups")
     val maxPullUpsInSet = integer("max_pullups_in_set")
     val date = datetime("date")
+}
+
+object AbsWorkouts : IntIdTable("abs_workouts") {
+    val user = reference("user_id", Users)
+    val date = datetime("date")
 } 

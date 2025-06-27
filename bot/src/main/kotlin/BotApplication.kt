@@ -8,6 +8,7 @@ import com.github.kotlintelegrambot.entities.ChatId.Companion.fromId
 import com.github.kotlintelegrambot.entities.KeyboardReplyMarkup
 import com.github.kotlintelegrambot.entities.keyboard.KeyboardButton
 import com.github.kotlintelegrambot.logging.LogLevel
+import data.AbsWorkoutRepositoryImpl
 import data.DatabaseFactory
 import data.PullUpWorkoutRepositoryImpl
 import data.SwimmingWorkoutRepositoryImpl
@@ -30,7 +31,8 @@ private val mainMenu = KeyboardReplyMarkup(
     keyboard = listOf(
         listOf(
             KeyboardButton(text = "🏊 Бассейн"),
-            KeyboardButton(text = "🏋️ Турник")
+            KeyboardButton(text = "🏋️ Турник"),
+            KeyboardButton(text = "🦾 Пресс")
         ),
         listOf(
             KeyboardButton(text = "📊 Отчёт")
@@ -54,6 +56,7 @@ fun main() {
     val userRepo = UserRepositoryImpl()
     val swimmingRepo = SwimmingWorkoutRepositoryImpl()
     val pullupRepo = PullUpWorkoutRepositoryImpl()
+    val absRepo = AbsWorkoutRepositoryImpl()
 
     val dialogState = ConcurrentHashMap<Long, DialogState>()
 
@@ -89,10 +92,20 @@ fun main() {
                                 replyMarkup = cancelMenu
                             )
                         }
+                        text == "🦾 Пресс" -> {
+                            val user = userRepo.getOrCreateByTelegramId(userId)
+                            absRepo.addAbsWorkout(user.id, LocalDateTime.now())
+                            bot.sendMessage(
+                                chatId = fromId(message.chat.id),
+                                text = "Тренировка на пресс сохранена!",
+                                replyMarkup = mainMenu
+                            )
+                        }
                         text == "📊 Отчёт" -> {
                             val user = userRepo.getOrCreateByTelegramId(userId)
                             val swimList = swimmingRepo.getAllByUser(user.id)
                             val pullupList = pullupRepo.getAllByUser(user.id)
+                            val absList = absRepo.getAllByUser(user.id)
                             val formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")
                             val swimReport = if (swimList.isEmpty()) "Нет записей по бассейну." else swimList.joinToString("\n\n") {
                                 "${it.date.format(formatter)}\nДистанция: ${it.distance} м\nВремя: ${it.totalTime} сек" +
@@ -102,9 +115,10 @@ fun main() {
                             val pullupReport = if (pullupList.isEmpty()) "Нет записей по турнику." else pullupList.joinToString("\n\n") {
                                 "${it.date.format(formatter)}\nВсего подтягиваний: ${it.totalPullUps}\nМаксимум за подход: ${it.maxPullUpsInSet}"
                             }
+                            val absReport = if (absList.isEmpty()) "Нет записей по прессу." else "Даты: " + absList.joinToString(", ") { it.date.format(formatter) } + "\nВсего: ${absList.size}"
                             bot.sendMessage(
                                 chatId = fromId(message.chat.id),
-                                text = "🏊 Бассейн:\n$swimReport\n\n🏋️ Турник:\n$pullupReport",
+                                text = "🏊 Бассейн:\n$swimReport\n\n🏋️ Турник:\n$pullupReport\n\n🦾 Пресс:\n$absReport",
                                 replyMarkup = mainMenu
                             )
                         }
@@ -271,4 +285,5 @@ sealed class DialogState {
     // Турник
     data object PullUp_Total : DialogState()
     data class PullUp_Max(val total: Int) : DialogState()
+    data object Abs_Add : DialogState()
 } 
