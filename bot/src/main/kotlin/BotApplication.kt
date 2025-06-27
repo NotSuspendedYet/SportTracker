@@ -107,8 +107,9 @@ fun main() {
                             val pullupList = pullupRepo.getAllByUser(user.id)
                             val absList = absRepo.getAllByUser(user.id)
                             val formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")
+
                             val swimReport = if (swimList.isEmpty()) "Нет записей по бассейну." else swimList.joinToString("\n\n") {
-                                "${it.date.format(formatter)}\nДистанция: ${it.distance} м\nВремя: ${it.totalTime} сек" +
+                                "${it.date.format(formatter)}\nДистанция: ${it.distance} м\nВремя: ${it.formattedTotalTime}" +
                                 (it.paddlesDistance?.let { pd -> "\nС лопатками: $pd м" } ?: "") +
                                 (it.best50mTime?.let { b50 -> "\nЛучшие 50м: $b50 сек" } ?: "")
                             }

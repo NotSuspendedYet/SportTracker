@@ -1,5 +1,6 @@
 package domain
 
+import java.time.Duration
 import java.time.LocalDateTime
 
 data class User(val id: Int, val telegramId: Long)
@@ -16,7 +17,17 @@ data class SwimmingWorkout(
     val paddlesDistance: Int?,
     val best50mTime: Int?,
     val date: LocalDateTime
-)
+) {
+
+    val formattedTotalTime: String
+        get() = Duration.ofSeconds(totalTime.toLong()).let { duration ->
+            val hours = duration.toHours()
+            val minutes = duration.toMinutes() % 60
+            val seconds = totalTime % 60
+
+            String.format("%02d:%02d:%02d", hours, minutes, seconds)
+        }
+}
 
 data class PullUpWorkout(
     val id: Int,
